@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adelante Story - Chat Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        #chat-container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 6px 6px 9px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+        }
+
+        #chat-header {
+            background-color: #40ABCD;
+            color: white;
+            padding: 25px;
+            border-radius: 12px 12px 0 0;
+            text-align: center;
+        }
+
+        #chat-header h1 {
+            font-family: 'Poppins'sans-serif;
+            font-weight: 400;
+            letter-spacing: 1px;
+            font-size: 25px;
+            text-transform: uppercase;
+        }
+
+        #chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #ffffff;
+        }
+
+        #chat-input-area {
+            padding: 20px;
+            border-top: 1px solid #abb8c3;
+            display: flex;
+            gap: 12px;
+            background-color: #fafafa;
+            border-radius: 0 0 12px 12px;
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #abb8c3;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        #user-input:focus {
+            outline: none;
+            border-color: #f3b626;
+        }
+
+        #send-button {
+            padding: 12px 28px;
+            background-color: #f3b626;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s, transform 0.1s;
+            box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        #send-button:hover {
+            background-color: #40abcd;
+        }
+
+        #send-button:active {
+            transform: scale(0.98);
+        }
+
+        .message {
+            margin-bottom: 16px;
+            padding: 12px 18px;
+            border-radius: 12px;
+            max-width: 75%;
+            word-wrap: break-word;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-message {
+            background-color: #f9f9f9;
+            color: #32373c;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .agent-message {
+            background-color: #f9f9f9;
+            color: #32373c;
+            margin-right: auto;
+            white-space: pre-wrap;
+            line-height: 1.6;
+            border-left: 4px solid #ba5246;
+        }
+
+        .agent-message ul, .agent-message ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .agent-message li {
+            margin: 5px 0;
+        }
+
+        .agent-message p {
+            margin: 10px 0;
+        }
+
+        .agent-message strong {
+            color: #ba5246;
+            font-weight: 700;
+        }
+
+        .loading {
+            font-style: italic;
+            color: #abb8c3;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <div id="chat-header">
+            <h1>Adelante Story Foundation</h1>
+            <p style="margin-top: 8px; font-size: 14px; opacity: 0.9;">Chat Assistant</p>
+        </div>
+
+        <div id="chat-messages">
+            <!-- Messages will appear here -->
+        </div>
+    
+        <div id="chat-input-area">
+            <input type="text" id="user-input" placeholder="Type your message...">
+            <button id="send-button">Send</button>
+        </div>
+    </div>
+    <script>
+        // Get references to HTML elements
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        
+        // Store session ID (generated once per page load)
+        let sessionId = null;
+
+        // Function to format agent response with basic markdown-like formatting
+        function formatResponse(text) {
+            // Convert markdown-style formatting to HTML
+            let formatted = text;
+
+            // Convert **bold** to <strong>
+            formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+            // Convert *italic* to <em>
+            formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+            // Split into lines for processing
+            const lines = formatted.split('\n');
+            let html = '';
+            let inList = false;
+            let inOrderedList = false;
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i];
+
+                // Check for bullet points (-, *, •)
+                if (line.trim().match(/^[-*•]\s/)) {
+                    if (!inList) {
+                        html += '<ul>';
+                        inList = true;
+                    }
+                    const content = line.trim().substring(2);
+                    html += `<li>${content}</li>`;
+                }
+                // Check for numbered lists (1., 2., etc.)
+                else if (line.trim().match(/^\d+\.\s/)) {
+                    if (!inOrderedList) {
+                        html += '<ol>';
+                        inOrderedList = true;
+                    }
+                    const content = line.trim().replace(/^\d+\.\s/, '');
+                    html += `<li>${content}</li>`;
+                }
+                // Regular paragraph
+                else {
+                    // Close any open lists
+                    if (inList) {
+                        html += '</ul>';
+                        inList = false;
+                    }
+                    if (inOrderedList) {
+                        html += '</ol>';
+                        inOrderedList = false;
+                    }
+
+                    // Add line (preserve empty lines as breaks)
+                    if (line.trim() === '') {
+                        html += '<br>';
+                    } else {
+                        html += `<p>${line}</p>`;
+                    }
+                }
+            }
+
+            // Close any remaining open lists
+            if (inList) html += '</ul>';
+            if (inOrderedList) html += '</ol>';
+
+            return html;
+        }
+
+        // Function to add a message to the chat window
+        function addMessage(message, isUser) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + (isUser ? 'user-message' : 'agent-message');
+
+            if (isUser) {
+                messageDiv.textContent = message;
+            } else {
+                // Format agent messages with HTML
+                messageDiv.innerHTML = formatResponse(message);
+            }
+
+            chatMessages.appendChild(messageDiv);
+
+            // Auto-scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Function to send message to the backend
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            
+            // Don't send empty messages
+            if (!message) return;
+            
+            // Display user's message
+            addMessage(message, true);
+            
+            // Clear input field
+            userInput.value = '';
+            
+            // Show "typing..." indicator
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message agent-message loading';
+            loadingDiv.textContent = 'Agent is typing...';
+            loadingDiv.id = 'loading-indicator';
+            chatMessages.appendChild(loadingDiv);
+            
+            try {
+                // Send message to Flask backend
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        session_id: sessionId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Remove loading indicator
+                loadingDiv.remove();
+                
+                // Store session ID from response
+                sessionId = data.session_id;
+                
+                // Display agent's response
+                if (data.response) {
+                    addMessage(data.response, false);
+                } else if (data.error) {
+                    addMessage('Error: ' + data.error, false);
+                }
+                
+            } catch (error) {
+                loadingDiv.remove();
+                addMessage('Error: Could not connect to server', false);
+            }
+        }
+
+         // Listen for button click
+        sendButton.addEventListener('click', sendMessage);
+        
+        // Listen for Enter key press
+        userInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Focus on input when page loads
+        userInput.focus();
+    </script>
+    
+</body>
+</html>

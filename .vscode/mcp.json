@@ -1,0 +1,12 @@
+{
+	"servers": {
+		"RentCastMCP": {
+			"url": "https://developers.rentcast.io/mcp",
+			"type": "http",
+			"headers": {
+				"x-api-key": "96693f2137ad4e7892499c314463820d"
+			}
+
+		}
+	}
+}

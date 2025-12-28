@@ -1,0 +1,17 @@
+# Phoenix, Arizona Mortgage Programs Summary
+
+## FHA Loan Program
+
+The Federal Housing Administration (FHA) loan requires a minimum credit score of 580 for 3.5% down payment, or 500-579 for 10% down. Maximum loan limits in Maricopa County are $498,257 for single-family homes in 2024. The program requires an upfront mortgage insurance premium of 1.75% of the loan amount plus annual mortgage insurance (0.55-0.85% depending on loan-to-value ratio). Debt-to-income ratios can extend up to 50% with compensating factors.
+
+## VA Loan Program
+
+Veterans Affairs (VA) loans require no down payment and no monthly mortgage insurance for eligible veterans, active-duty service members, and qualifying spouses. The 2024 loan limit in Maricopa County is $766,550 for zero-down purchases, with higher amounts available with a down payment. VA loans charge a funding fee ranging from 1.25% to 3.3% depending on down payment amount, service type, and first-time use (waived for disabled veterans). Maximum debt-to-income ratio is typically 41%, though compensating factors can allow higher ratios.
+
+## Conventional Loan Program
+
+Conventional loans conforming to Fannie Mae/Freddie Mac guidelines have 2024 loan limits of $766,550 in Maricopa County for single-family homes. Minimum down payment is 3% for first-time homebuyers (5% for non-first-time buyers), with private mortgage insurance (PMI) required below 20% down (typically 0.3-1.5% annually). Credit score requirements typically start at 620, though 640-680 is more competitive for lower down payments. Debt-to-income ratios generally max at 45-50% depending on credit profile and compensating factors.
+
+## HOME in Five Advantage Program (Arizona Department of Housing)
+
+Arizona's HOME in Five Advantage provides down payment assistance up to 5% of the purchase price (maximum $15,000) as a forgivable second mortgage that requires no monthly payments. The assistance is forgiven at 20% per year over five years if the homebuyer remains in the home as their primary residence. Income limits for Maricopa County are $128,800 for households of 1-2 people and $148,100 for 3+ people (2024 limits). Purchase price limits are $461,511 in Maricopa County, and the program can be combined with FHA, VA, USDA, or conventional financing with minimum 640 credit score.
