@@ -64,8 +64,8 @@ def search_court_opinions(query: str, limit: int = 5) -> dict:
 
 def search_adelante_knowledge(query: str) -> str:
     """
-    Search the Adelante Story Foundation knowledge base for information about the organization, 
-    including their mission, programs (especially mortgage/housing programs), services, history, 
+    Search the Adelante Story Foundation knowledge base for information about the organization,
+    including their mission, programs (especially mortgage/housing programs), services, history,
     and impact. Use this tool for ANY question about Adelante Story Foundation.
 
     Args:
@@ -78,8 +78,74 @@ def search_adelante_knowledge(query: str) -> str:
 
     print(f"[TOOL CALLED] search_adelante_knowledge(query='{query}')")
 
-    result = search_knowledge_base(query, top_k=4)
+    result = search_knowledge_base(query, top_k=7)
     return result
+
+def search_home_listings(city: str = None, state: str = None, zip_code: str = None,
+                        min_price: float = None, max_price: float = None) -> dict:
+    """
+    Search for active homes for sale using the RentCast API.
+
+    Use this tool when users ask about homes for sale, real estate listings, or properties
+    available in a specific location. Return as many listings as are available.
+
+    Args:
+        city: City name (e.g., "Scottsdale")
+        state: Two-letter state code (e.g., "AZ")
+        zip_code: 5-digit ZIP code (e.g., "85254")
+        min_price: Minimum listing price in dollars (optional)
+        max_price: Maximum listing price in dollars (optional)
+
+    Returns:
+        Dictionary containinghome sale listings with details like
+        address, price, bedrooms, bathrooms, square footage, etc.
+    """
+    import requests
+    from config import RENTCAST_API_KEY
+
+    print(f"[TOOL CALLED] search_home_listings(city='{city}', state='{state}', zip_code='{zip_code}', "
+          f"min_price={min_price}, max_price={max_price})")
+
+    if not RENTCAST_API_KEY:
+        raise ValueError("RENTCAST_API_KEY not found in environment variables")
+
+    # Build API parameters
+    params = {
+        "status": "Active"
+    }
+
+    if city:
+        params["city"] = city
+    if state:
+        params["state"] = state
+    if zip_code:
+        params["zipCode"] = zip_code
+    if min_price is not None:
+        params["minPrice"] = min_price
+    if max_price is not None:
+        params["maxPrice"] = max_price
+
+    headers = {
+        "accept": "application/json",
+        "X-Api-Key": RENTCAST_API_KEY
+    }
+
+    try:
+        response = requests.get(
+            "https://api.rentcast.io/v1/listings/sale",
+            headers=headers,
+            params=params
+        )
+        response.raise_for_status()
+        return response.json()
+
+    except requests.exceptions.HTTPError as e:
+        error_msg = f"RentCast API error: {e.response.status_code}"
+        if e.response.text:
+            error_msg += f" - {e.response.text}"
+        raise Exception(error_msg)
+    except Exception as e:
+        raise Exception(f"Error fetching home listings: {str(e)}")
 
 async def get_rentcast_mcp_tool():
     """
@@ -110,5 +176,24 @@ async def get_rentcast_mcp_tool():
     print("[TOOL LOADED] Rentcast MCP tool ready")
 
     return mcp_tool
+
+def tavily_search(query: str, max_results: int = 5) -> dict:
+    """
+    Search the web using Tavily API.
+
+    Use this when users ask questions requiring current information,
+    recent news, or real-time data not in your knowledge base.
+    """
+    from tavily import TavilyClient
+    from config import TAVILY_API_KEY
+
+    print(f"[TOOL] 🔍 Tavily search: '{query}' (max {max_results} results)")
+
+    if not TAVILY_API_KEY:
+        raise ValueError("TAVILY_API_KEY not found")
+    
+    client = TavilyClient(api_key=TAVILY_API_KEY)
+    response = client.search(query=query, max_results=max_results)
+    return response
     
 

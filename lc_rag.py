@@ -3,14 +3,14 @@ from langchain_community.document_loaders import WebBaseLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_openai import AzureOpenAIEmbeddings
-from config import AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY
+from config import AZURE_OPENAI_EMBEDDINGS_ENDPOINT, AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT, AZURE_OPENAI_EMBEDDINGS_API_KEY
 import os
 
 # Initialize embeddings (reused across functions)
 embeddings = AzureOpenAIEmbeddings(
-    model="text-embedding-3-small",
-    azure_endpoint=AZURE_OPENAI_ENDPOINT,
-    api_key=AZURE_OPENAI_API_KEY,
+    model=AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT,
+    azure_endpoint=AZURE_OPENAI_EMBEDDINGS_ENDPOINT,
+    api_key=AZURE_OPENAI_EMBEDDINGS_API_KEY,
     api_version="2024-02-01"
 )
 
@@ -78,7 +78,7 @@ def add_document_to_knowledge_base(file_path: str, source_name: str):
     vectorstore.save_local(VECTOR_STORE_PATH)
     print("Saved!")
 
-def search_knowledge_base(query: str, top_k: int = 6) -> str:
+def search_knowledge_base(query: str, top_k: int = 7) -> str:
     """
     Search the knowledge base for relevant chunks
 
@@ -111,5 +111,5 @@ def search_knowledge_base(query: str, top_k: int = 6) -> str:
     return '\n\n'.join([doc.page_content for doc in docs])
 
 if __name__ =="__main__":
-    #build_knowledge_base("https://adelantestory.com")  # One time build 
-    add_document_to_knowledge_base('docs/programs.txt', 'mortgage programs')
+    build_knowledge_base("https://adelantestory.com")  # One time build 
+    #add_document_to_knowledge_base('docs/programs.txt', 'mortgage programs')

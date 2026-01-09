@@ -2,14 +2,17 @@ import asyncio
 import time
 import json
 import os
+from xmlrpc import client
 from agent_framework.observability import setup_observability
-from config import APPLICATIONINSIGHTS_CONNECTION_STRING, ENABLE_OBSERVABILITY
+from openai import base_url
+from config import APPLICATIONINSIGHTS_CONNECTION_STRING, ENABLE_OBSERVABILITY, MODEL_PROVIDER
 from pathlib import Path
 from agent_framework.azure import AzureOpenAIChatClient
+from agent_framework.openai import OpenAIChatClient
 from agent_framework import AgentRunContext, FunctionInvocationContext, ChatContext
 from azure.identity import AzureCliCredential
-from config import AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT, ENABLE_CONVERSATION_LOGGING, CONVERSATION_LOG_FILE
-from tools import calculator, search_court_opinions, search_adelante_knowledge, get_rentcast_mcp_tool
+from config import AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT, ENABLE_CONVERSATION_LOGGING, CONVERSATION_LOG_FILE, OLLAMA_ENDPOINT, OLLAMA_MODEL_NAME
+from tools import calculator, search_court_opinions, search_adelante_knowledge, get_rentcast_mcp_tool, search_home_listings, tavily_search
 from analytics import InMemoryAnalytics, initialize_analytics, get_analytics_backend
 from datetime import datetime
 
@@ -222,11 +225,23 @@ async def create_agent(rentcast_tool=None):
     if rentcast_tool is None:
         rentcast_tool = await get_rentcast_mcp_tool()
 
-    agent = AzureOpenAIChatClient(
-        endpoint=AZURE_OPENAI_ENDPOINT,
-        deployment_name=AZURE_OPENAI_DEPLOYMENT,
-        credential=AzureCliCredential()
-    ).create_agent(
+    # Initialize the appropriate client based on MODEL_PROVIDER
+    if MODEL_PROVIDER == "ollama":
+        # Use local Ollama model
+        client = OpenAIChatClient(
+            base_url=OLLAMA_ENDPOINT,
+            model_id=OLLAMA_MODEL_NAME,
+            api_key="not-needed"
+        )
+        print(f"🦙 Using Ollama model: {OLLAMA_MODEL_NAME} at {OLLAMA_ENDPOINT}")
+    else:
+        client = AzureOpenAIChatClient(
+            endpoint=AZURE_OPENAI_ENDPOINT,
+            deployment_name=AZURE_OPENAI_DEPLOYMENT,
+            credential=AzureCliCredential()
+        )
+        print(f"☁️ Using Azure OpenAI model: {AZURE_OPENAI_DEPLOYMENT} at {AZURE_OPENAI_ENDPOINT}")
+    agent = client.create_agent(
         name="TestBot",
         instructions="""You are a representative of the nonprofit organization,
         the Adelante Story Foundation. You are bilingual (English/Spanish).
@@ -234,13 +249,25 @@ async def create_agent(rentcast_tool=None):
         LANGUAGE: Always respond in the same language the user writes in. If the user writes
         in Spanish, answer completely in Spanish. If in English, answer in English.
 
-        INTRODUCTION: Begin the session by saying "Hi I'm Addie your AI assistant from the Adelante Story Foundation.
-        I can provide information about our Housing, Technical Skilling, and Community Outreach programs...and more.
+        INTRODUCTION: On only the initial chat completion of the session prompt by saying "Hi I'm Addie your AI assistant from the Adelante Story Foundation.
+        I can provide information about our Housing, Technical Skilling, and Community Outreach programs...and more. On further responses, do not reintroduce yourself.
         So, how can I help you today?"
 
         KNOWLEDGE: Start with your general housing expertise for questions, and then augment and refine your answers by searching
         the knowledge base. Reference https://adelantestory.com for background. You also have access to real estate
         and property data through Rentcast for housing-related questions.
+
+        HOME LISTINGS - CRITICAL INSTRUCTION: 
+        When a user asks about homes for sale in a specific city or ZIP code, you MUST follow this exact process:
+
+        1. FIRST: Check if they mentioned a price range
+        2. IF NO price range mentioned: STOP and ask "Would you like to specify a price range (minimum and maximum price)?" 
+            - DO NOT search yet - wait for their response
+        3. ONLY AFTER confirming price preferences: Use the search_home_listings tool
+        4. Return up to 10 active listings
+
+        GENERAL QUESTIONS: For general questions about current events, recent news, or real-time data not in your knowledge base.
+        If one of the purpose built tools seems to lack detail augment it with a Tavily web search using the tavily_search tool.
 
         FORMATTING: Format your responses for readability:
         - Use line breaks between paragraphs
@@ -258,7 +285,7 @@ async def create_agent(rentcast_tool=None):
         - Third important point
 
         Additional context in a new paragraph.""",
-        tools=[calculator, search_court_opinions, search_adelante_knowledge, rentcast_tool],
+        tools=[calculator, search_court_opinions, search_adelante_knowledge, rentcast_tool, tavily_search],
         middleware=[agent_middleware, function_middleware, chat_middleware],  # Wire up middleware for observability
     )
 

@@ -138,7 +138,7 @@ async def chat(request: ChatRequest):
 
     # Get or create conversation
     if session_id not in conversations:
-        conversations[session_id] = {'history': []}
+        conversations[session_id] = {'history': [], 'agent': None}
 
     conversation = conversations[session_id]
 
@@ -146,8 +146,14 @@ async def chat(request: ChatRequest):
         # Get MCP tool from pool (reuses connection)
         mcp_tool = await mcp_pool.get_mcp_tool()
 
-        # Create agent with pooled MCP connection
-        agent = await create_agent(rentcast_tool=mcp_tool)
+        # Create or reusse agent with pooled MCP connection
+        if conversation['agent'] is None:
+            print(f"[SESSION] Creating NEW agent for session {session_id}")
+            conversation['agent'] = await create_agent(rentcast_tool=mcp_tool)
+        else:
+            print(f"[SESSION] Reusing EXISTING agent for session {session_id}")
+
+        agent = conversation['agent']
 
         # Get response from agent
         result = await agent.run(request.message)
