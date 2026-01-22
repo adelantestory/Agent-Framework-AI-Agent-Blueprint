@@ -1,0 +1,37 @@
+curl --request GET \
+  --url 'https://api.rentcast.io/v1/properties?address=6206%20E%20Le%20Marche%20Ave%2C%20Scottsdale%2C%20AZ%2C%85254' \
+  --header 'Accept: application/json' \
+  --header 'X-Api-Key: 96693f2137ad4e7892499c314463820d'
+
+
+curl --request GET \
+  --url 'https://api.rentcast.io/v1/properties?address=6206+E+Le+Marche+Ave,+Scottsdale,+AZ,+85254' \
+  --header 'Accept: application/json' \
+  --header 'X-Api-Key: 96693f2137ad4e7892499c314463820d'
+
+
+curl --request GET \
+     --url 'https://api.rentcast.io/v1/listings/sale?city=Scottsdale&state=AZ&zipCode=85254&status=Active&limit=5' \
+     --header 'accept: application/json' \
+     --header 'X-Api-Key: 96693f2137ad4e7892499c314463820d'
+
+curl --request GET \
+  --url 'https://api.rentcast.io/v1/properties?address=4931+E+Paradise+Ln,+Scottsdale,+AZ,+85254' \
+  --header 'Accept: application/json' \
+  --header 'X-Api-Key: 96693f2137ad4e7892499c314463820d'
+
+
+curl --request GET \
+  --url 'https://api.rentcast.io/v1/listings/sale?address=4931+E+Paradise+Ln,+Scottsdale,+AZ,+85254' \
+  --header 'Accept: application/json' \
+  --header 'X-Api-Key: 96693f2137ad4e7892499c314463820d'
+
+curl --request GET \
+  --url 'https://api.rentcast.io/v1/listings/sale?address=4909+E+Waltann+Ln,+Scottsdale,+AZ,+85254' \
+  --header 'Accept: application/json' \
+  --header 'X-Api-Key: 96693f2137ad4e7892499c314463820d'
+
+curl --request GET \
+     --url 'https://api.rentcast.io/v1/listings/sale?zipCode=85254&status=Active' \
+     --header 'accept: application/json' \
+     --header 'X-Api-Key: 96693f2137ad4e7892499c314463820d'

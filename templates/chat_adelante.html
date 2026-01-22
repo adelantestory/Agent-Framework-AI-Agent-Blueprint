@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adelante Story - Chat Assistant</title>
+    <title>AI Chat Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,83 +15,93 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background-color: #f5f5f5;
+            font-family: 'Lora', Georgia, serif;
+            background-color: #faf9f5;
+            color: #141413;
         }
 
         #chat-container {
             max-width: 800px;
             margin: 20px auto;
-            background-color: white;
+            background-color: #ffffff;
             border-radius: 12px;
-            box-shadow: 6px 6px 9px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 12px rgba(20, 20, 19, 0.08);
             display: flex;
             flex-direction: column;
             height: 90vh;
+            border: 1px solid #e8e6dc;
         }
 
         #chat-header {
-            background-color: #40ABCD;
-            color: white;
+            background-color: #e8e6dc;
+            color: #141413;
             padding: 25px;
             border-radius: 12px 12px 0 0;
             text-align: center;
         }
 
         #chat-header h1 {
-            font-family: 'Poppins'sans-serif;
-            font-weight: 400;
-            letter-spacing: 1px;
-            font-size: 25px;
-            text-transform: uppercase;
+            font-family: 'Poppins', Arial, sans-serif;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            font-size: 26px;
+        }
+
+        #chat-header p {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #b0aea5;
+            font-family: 'Lora', Georgia, serif;
         }
 
         #chat-messages {
             flex: 1;
-            padding: 20px;
+            padding: 24px;
             overflow-y: auto;
-            background-color: #ffffff;
+            background-color: #faf9f5;
         }
 
         #chat-input-area {
             padding: 20px;
-            border-top: 1px solid #abb8c3;
+            border-top: 1px solid #e8e6dc;
             display: flex;
             gap: 12px;
-            background-color: #fafafa;
+            background-color: #ffffff;
             border-radius: 0 0 12px 12px;
         }
 
         #user-input {
             flex: 1;
             padding: 12px 16px;
-            border: 2px solid #abb8c3;
+            border: 2px solid #e8e6dc;
             border-radius: 8px;
             font-size: 16px;
-            font-family: inherit;
+            font-family: 'Lora', Georgia, serif;
             transition: border-color 0.3s;
+            background-color: #faf9f5;
+            color: #141413;
         }
 
         #user-input:focus {
             outline: none;
-            border-color: #f3b626;
+            border-color: #d97757;
+        }
+
+        #user-input::placeholder {
+            color: #b0aea5;
         }
 
         #send-button {
             padding: 12px 28px;
-            background-color: #f3b626;
-            color: white;
+            background-color: #141413;
+            color: #e8e6dc;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
             font-weight: 600;
-            transition: background-color 0.3s, transform 0.1s;
-            box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.15);
-        }
-
-        #send-button:hover {
-            background-color: #40abcd;
+            font-family: 'Poppins', Arial, sans-serif;
+            box-shadow: 0 2px 6px rgba(20, 20, 19, 0.2);
         }
 
         #send-button:active {
@@ -97,26 +110,28 @@
 
         .message {
             margin-bottom: 16px;
-            padding: 12px 18px;
+            padding: 14px 18px;
             border-radius: 12px;
             max-width: 75%;
             word-wrap: break-word;
-            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 6px rgba(20, 20, 19, 0.06);
         }
 
         .user-message {
-            background-color: #f9f9f9;
-            color: #32373c;
+            background-color: #e8e6dc;
+            color: #141413;
             margin-left: auto;
             text-align: right;
+            font-family: 'Lora', Georgia, serif;
         }
 
         .agent-message {
-            background-color: #f9f9f9;
-            color: #32373c;
+            background-color: #ffffff;
+            color: #141413;
             margin-right: auto;
             white-space: pre-wrap;
-            line-height: 1.6;
+            line-height: 1.7;
+            font-family: 'Lora', Georgia, serif;
         }
 
         .agent-message ul, .agent-message ol {
@@ -145,21 +160,39 @@
 
         .loading {
             font-style: italic;
-            color: #abb8c3;
+            color: #b0aea5;
+        }
+
+        /* Scrollbar styling for webkit browsers */
+        #chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #chat-messages::-webkit-scrollbar-track {
+            background: #e8e6dc;
+            border-radius: 4px;
+        }
+
+        #chat-messages::-webkit-scrollbar-thumb {
+            background: #b0aea5;
+            border-radius: 4px;
+        }
+
+        #chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #b0aea5;
         }
     </style>
 </head>
 <body>
     <div id="chat-container">
         <div id="chat-header">
-            <h1>Adelante Story Foundation</h1>
-            <p style="margin-top: 8px; font-size: 14px; opacity: 0.9;">Chat Assistant</p>
+            <h1>Addie, Your AI Assistant</h1>
         </div>
 
         <div id="chat-messages">
             <!-- Messages will appear here -->
         </div>
-    
+
         <div id="chat-input-area">
             <input type="text" id="user-input" placeholder="Type your message...">
             <button id="send-button">Send</button>
@@ -170,7 +203,7 @@
         const chatMessages = document.getElementById('chat-messages');
         const userInput = document.getElementById('user-input');
         const sendButton = document.getElementById('send-button');
-        
+
         // Store session ID (generated once per page load)
         let sessionId = null;
 
@@ -261,23 +294,23 @@
         // Function to send message to the backend
         async function sendMessage() {
             const message = userInput.value.trim();
-            
+
             // Don't send empty messages
             if (!message) return;
-            
+
             // Display user's message
             addMessage(message, true);
-            
+
             // Clear input field
             userInput.value = '';
-            
+
             // Show "typing..." indicator
             const loadingDiv = document.createElement('div');
             loadingDiv.className = 'message agent-message loading';
             loadingDiv.textContent = 'Agent is typing...';
             loadingDiv.id = 'loading-indicator';
             chatMessages.appendChild(loadingDiv);
-            
+
             try {
                 // Send message to Flask backend
                 const response = await fetch('/api/chat', {
@@ -290,22 +323,22 @@
                         session_id: sessionId
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 // Remove loading indicator
                 loadingDiv.remove();
-                
+
                 // Store session ID from response
                 sessionId = data.session_id;
-                
+
                 // Display agent's response
                 if (data.response) {
                     addMessage(data.response, false);
                 } else if (data.error) {
                     addMessage('Error: ' + data.error, false);
                 }
-                
+
             } catch (error) {
                 loadingDiv.remove();
                 addMessage('Error: Could not connect to server', false);
@@ -314,17 +347,25 @@
 
          // Listen for button click
         sendButton.addEventListener('click', sendMessage);
-        
+
         // Listen for Enter key press
         userInput.addEventListener('keypress', function(event) {
             if (event.key === 'Enter') {
                 sendMessage();
             }
         });
-        
+
+        // Display welcome message on page load
+        const welcomeMessage = `Hi I'm Addie your AI assistant from the Adelante Story Foundation.
+
+I can provide information about our Housing, Technical Skilling, and Community Outreach programs...and more.
+
+So, how can I help you today?`;
+        addMessage(welcomeMessage, false);
+
         // Focus on input when page loads
         userInput.focus();
     </script>
-    
+
 </body>
 </html>

@@ -1,5 +1,5 @@
 #lc_rag.py - LangChain version
-from langchain_community.document_loaders import WebBaseLoader, TextLoader
+from langchain_community.document_loaders import WebBaseLoader, TextLoader, PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_openai import AzureOpenAIEmbeddings
@@ -16,8 +16,8 @@ embeddings = AzureOpenAIEmbeddings(
 
 # Text splitter configuration
 text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=150,
-    chunk_overlap=50,
+    chunk_size=800,
+    chunk_overlap=100,
     separators=["\n\n", "\n", ". "," ", ""]
 )
 
@@ -78,6 +78,49 @@ def add_document_to_knowledge_base(file_path: str, source_name: str):
     vectorstore.save_local(VECTOR_STORE_PATH)
     print("Saved!")
 
+def add_pdf_to_knowledge_base(file_path: str, source_name: str):
+    """
+    Add a PDF file to the existing knowledge base
+
+    Args:
+        file_path: Path to PDF file
+        source_name: Name/label for this source (e.g., 'Loan Originator Overview')
+    """
+    # PyPDFLoader loads PDF page-by-page
+    # Each page becomes a separate Document object with page number metadata
+    loader = PyPDFLoader(file_path)
+    documents = loader.load()
+
+    print(f"Loaded {len(documents)} pages from {file_path}")
+
+    # Add custom metadata to each page/document
+    for doc in documents:
+        doc.metadata['source'] = source_name
+        doc.metadata['type'] = 'pdf'
+        # PyPDFLoader already adds 'page' metadata automatically
+
+    # Split each page into smaller chunks based on your text_splitter config
+    # This is where the magic happens - takes long pages and breaks them into
+    # optimal-sized pieces for embedding
+    chunks = text_splitter.split_documents(documents)
+    print(f"Created {len(chunks)} chunks from {len(documents)} pages")
+
+    # Load existing vectorstore or create new one
+    if os.path.exists(VECTOR_STORE_PATH):
+        vectorstore = FAISS.load_local(
+            VECTOR_STORE_PATH,
+            embeddings,
+            allow_dangerous_deserialization=True
+        )
+        vectorstore.add_documents(chunks)
+        print(f"Added {len(chunks)} chunks to existing knowledge base")
+    else:
+        vectorstore = FAISS.from_documents(chunks, embeddings)
+        print(f"Created new knowledge base with {len(chunks)} chunks")
+
+    vectorstore.save_local(VECTOR_STORE_PATH)
+    print("Saved!")
+
 def search_knowledge_base(query: str, top_k: int = 7) -> str:
     """
     Search the knowledge base for relevant chunks
@@ -111,5 +154,7 @@ def search_knowledge_base(query: str, top_k: int = 7) -> str:
     return '\n\n'.join([doc.page_content for doc in docs])
 
 if __name__ =="__main__":
-    build_knowledge_base("https://adelantestory.com")  # One time build 
+    # Example usage - uncomment the one you want to run
+    #build_knowledge_base("https://adelantestory.com")  # One time build
     #add_document_to_knowledge_base('docs/programs.txt', 'mortgage programs')
+    add_pdf_to_knowledge_base('docs/Loan-Originator-Overview.pdf', 'Loan Originator Overview')

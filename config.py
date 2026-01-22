@@ -42,5 +42,10 @@ AZURE_OPENAI_EMBEDDINGS_ENDPOINT = os.getenv("AZURE_OPENAI_EMBEDDINGS_ENDPOINT",
 AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT = os.getenv("AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT", "text-embedding-3-small")
 AZURE_OPENAI_EMBEDDINGS_API_KEY = os.getenv("AZURE_OPENAI_EMBEDDINGS_API_KEY", AZURE_OPENAI_API_KEY)
 
+# Qdrant Vector Database (purchased via Azure Marketplace)
+QDRANT_URL = os.getenv("QDRANT_URL")  # e.g., https://xyz.qdrant.io:6333
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+QDRANT_COLLECTION_NAME = os.getenv("QDRANT_COLLECTION_NAME", "adelante_knowledge")
+
 
 

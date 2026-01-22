@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# Environment variables (IMPORTANT - contains secrets!)
+.env
+.env.local
+.env.*.local
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.claude/
+
+# Logs
+logs/
+*.log
+
+# Testing
+.pytest_cache/
+.coverage
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Documentation
+README.md
+*.md
+
+# Migration & test scripts (not needed in production)
+migrate_to_qdrant.py
+test_*.py
+
+# Local FAISS database (using Qdrant in production)
+knowledge_base_faiss/
+
+# Temporary files
+*.tmp
+.DS_Store
+Thumbs.db

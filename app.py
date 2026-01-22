@@ -117,6 +117,18 @@ async def dashboard():
             status_code=404
         )
 
+@app.get("/adelante", response_class=HTMLResponse)
+async def adelante_chat():
+    """Render the Adelante-branded chat interface"""
+    try:
+        with open("templates/chat_adelante.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return HTMLResponse(
+            content="<h1>Adelante chat interface not found</h1><p>Please ensure templates/chat_adelante.html exists</p>",
+            status_code=404
+        )
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint for deployment monitoring"""

@@ -64,21 +64,21 @@ def search_court_opinions(query: str, limit: int = 5) -> dict:
 
 def search_adelante_knowledge(query: str) -> str:
     """
-    Search the Adelante Story Foundation knowledge base for information about the organization,
-    including their mission, programs (especially mortgage/housing programs), services, history,
+    Search the Adelante Story Foundation knowledge base (now in Qdrant) for information about the organization,
+    including their mission, programs (especially mortgage/housing programs), home lending laws, regulations and governing bodies, services, history,
     and impact. Use this tool for ANY question about Adelante Story Foundation.
 
     Args:
-        query: What to search for (e.g., "mission", "programs")
+        query: What to search for (e.g., "mission", "programs", "housing assistance", "home lending)
 
     Returns:
         Relevant information from the website
     """
-    from lc_rag import search_knowledge_base
+    from lc_rag_qdrant import search_knowledge_base
 
-    print(f"[TOOL CALLED] search_adelante_knowledge(query='{query}')")
+    print(f"[TOOL CALLED] search_adelante_knowledge(query='{query}') - Using Qdrant")
 
-    result = search_knowledge_base(query, top_k=7)
+    result = search_knowledge_base(query, k=7)
     return result
 
 def search_home_listings(city: str = None, state: str = None, zip_code: str = None,
