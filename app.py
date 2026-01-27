@@ -12,17 +12,10 @@ from analytics import get_analytics_backend
 import uvicorn
 import asyncio
 from datetime import datetime
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="Adelante Story Chatbot")
-
-# Enable CORS for WordPress embedding
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with ["https://adelantestory.com"]
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Track application startup state
+startup_complete = False
 
 # Store active conversations
 conversations = {}
@@ -69,21 +62,40 @@ class MCPConnectionPool:
 # Global connection pool
 mcp_pool = MCPConnectionPool()
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize MCP connection on startup"""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifespan event handler for FastAPI startup and shutdown.
+    Replaces deprecated @app.on_event() decorators.
+    """
+    global startup_complete
+    # Startup
     print("Initializing MCP connection pool...")
     try:
         await mcp_pool.get_mcp_tool()
         print("Startup complete - MCP connection ready")
+        startup_complete = True
     except Exception as e:
         print(f"Warning: MCP connection failed at startup: {e}")
         print("Will retry on first request")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
+        startup_complete = True  # Still mark as complete to allow health checks
+    
+    yield
+    
+    # Shutdown
     print("Shutting down...")
+    startup_complete = False
+
+app = FastAPI(title="Adelante Story Chatbot", lifespan=lifespan)
+
+# Enable CORS for WordPress embedding
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with ["https://adelantestory.com"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class ChatRequest(BaseModel):
     message: str
@@ -129,11 +141,33 @@ async def adelante_chat():
             status_code=404
         )
 
-@app.get("/health")
-async def health_check():
-    """Health check endpoint for deployment monitoring"""
+@app.get("/healthz")
+async def healthz():
+    """
+    Kubernetes-style health check endpoint for startup/liveness probes.
+    Returns 200 only when application startup is complete.
+    """
+    if not startup_complete:
+        raise HTTPException(
+            status_code=503,
+            detail="Application is starting up"
+        )
+    
     return {
         "status": "healthy",
+        "startup_complete": startup_complete,
+        "mcp_connected": mcp_pool.mcp_tool is not None
+    }
+
+@app.get("/health")
+async def health_check():
+    """
+    Legacy health check endpoint for backward compatibility.
+    Always returns status information, even during startup.
+    """
+    return {
+        "status": "healthy" if startup_complete else "starting",
+        "startup_complete": startup_complete,
         "mcp_connected": mcp_pool.mcp_tool is not None
     }
 
