@@ -25,8 +25,16 @@ This deployment includes:
 
 - Azure CLI installed and authenticated
 - Azure subscription with Container Apps enabled
-- Existing Container App Environment named `adelante-chatbot-env`
-- Container image pushed to Azure Container Registry
+- **Existing Container App Environment** named `adelante-chatbot-env` (or update the parameter)
+  - If the environment doesn't exist, create it first:
+    ```bash
+    az containerapp env create \
+      --name adelante-chatbot-env \
+      --resource-group asf-chatbot-rg \
+      --location eastus
+    ```
+- Container image pushed to Azure Container Registry (or public registry)
+- Managed identity or registry credentials configured for pulling the container image
 
 ## Deployment Steps
 

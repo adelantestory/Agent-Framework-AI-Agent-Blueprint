@@ -23,7 +23,9 @@ param minReplicas int = 0
 @description('Maximum replicas')
 param maxReplicas int = 10
 
-// Container App Environment
+// Container App Environment (must already exist)
+// Create the environment first if it doesn't exist:
+// az containerapp env create --name adelante-chatbot-env --resource-group asf-chatbot-rg --location eastus
 resource environment 'Microsoft.App/managedEnvironments@2023-05-01' existing = {
   name: environmentName
 }
@@ -46,7 +48,16 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
           }
         ]
       }
-      // Add any required secrets here
+      // Secrets configuration
+      // Note: If using a private container registry, add registry credentials here
+      // Example:
+      // secrets: [
+      //   {
+      //     name: 'registry-password'
+      //     value: '<registry-password>'
+      //   }
+      // ]
+      // For managed identity authentication, no secrets are needed for ACR
       secrets: []
     }
     template: {
