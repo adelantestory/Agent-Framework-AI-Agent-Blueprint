@@ -129,6 +129,14 @@ async def adelante_chat():
             status_code=404
         )
 
+@app.get("/startup")
+async def startup_check():
+    """
+    Lightweight startup probe endpoint for Container App.
+    Returns immediately to signal the app has started and can accept connections.
+    """
+    return {"status": "ready"}
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint for deployment monitoring"""
