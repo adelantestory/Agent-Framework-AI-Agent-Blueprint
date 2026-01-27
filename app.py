@@ -15,7 +15,8 @@ from datetime import datetime
 from contextlib import asynccontextmanager
 
 # Track application startup state
-startup_complete = False
+# Using asyncio.Event for thread-safe startup tracking
+startup_complete_event = asyncio.Event()
 
 # Store active conversations
 conversations = {}
@@ -68,23 +69,27 @@ async def lifespan(app: FastAPI):
     Lifespan event handler for FastAPI startup and shutdown.
     Replaces deprecated @app.on_event() decorators.
     """
-    global startup_complete
     # Startup
     print("Initializing MCP connection pool...")
     try:
         await mcp_pool.get_mcp_tool()
         print("Startup complete - MCP connection ready")
-        startup_complete = True
     except Exception as e:
         print(f"Warning: MCP connection failed at startup: {e}")
         print("Will retry on first request")
-        startup_complete = True  # Still mark as complete to allow health checks
+        # Note: We still mark startup as complete to allow the service to start.
+        # This enables graceful degradation - the app can serve requests and retry
+        # MCP connections on-demand rather than failing the entire pod startup.
+    
+    # Mark startup as complete
+    startup_complete_event.set()
     
     yield
     
     # Shutdown
     print("Shutting down...")
-    startup_complete = False
+    # Note: We don't clear startup_complete_event during shutdown to avoid
+    # race conditions with in-flight requests
 
 app = FastAPI(title="Adelante Story Chatbot", lifespan=lifespan)
 
@@ -144,10 +149,13 @@ async def adelante_chat():
 @app.get("/healthz")
 async def healthz():
     """
-    Kubernetes-style health check endpoint for startup/liveness probes.
-    Returns 200 only when application startup is complete.
+    Kubernetes-style health check endpoint for startup probes.
+    Returns 503 during startup, 200 when ready.
+    
+    Note: This is designed for startup probes, not liveness probes.
+    For liveness probes, use the /health endpoint which always returns 200.
     """
-    if not startup_complete:
+    if not startup_complete_event.is_set():
         raise HTTPException(
             status_code=503,
             detail="Application is starting up"
@@ -155,19 +163,22 @@ async def healthz():
     
     return {
         "status": "healthy",
-        "startup_complete": startup_complete,
+        "startup_complete": True,
         "mcp_connected": mcp_pool.mcp_tool is not None
     }
 
 @app.get("/health")
 async def health_check():
     """
-    Legacy health check endpoint for backward compatibility.
-    Always returns status information, even during startup.
+    Legacy health check endpoint for backward compatibility and liveness probes.
+    Always returns 200 with status information.
+    
+    This endpoint is suitable for liveness probes as it returns 200 even during startup.
+    Use /healthz for startup probes.
     """
     return {
-        "status": "healthy" if startup_complete else "starting",
-        "startup_complete": startup_complete,
+        "status": "healthy" if startup_complete_event.is_set() else "starting",
+        "startup_complete": startup_complete_event.is_set(),
         "mcp_connected": mcp_pool.mcp_tool is not None
     }
 

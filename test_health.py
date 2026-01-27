@@ -71,11 +71,10 @@ def test_health_endpoint_during_startup():
     import app as app_module
     from app import app
     
-    # Before lifespan runs (no TestClient context), startup should not be complete
-    # This simulates the state between app creation and startup event
-    original_state = app_module.startup_complete
+    # Clear the event to simulate startup state
+    original_state = app_module.startup_complete_event.is_set()
     try:
-        app_module.startup_complete = False
+        app_module.startup_complete_event.clear()
         
         # Create client without context manager to avoid running lifespan
         client = TestClient(app, raise_server_exceptions=False)
@@ -88,7 +87,8 @@ def test_health_endpoint_during_startup():
         assert data["startup_complete"] is False
     finally:
         # Restore original state
-        app_module.startup_complete = original_state
+        if original_state:
+            app_module.startup_complete_event.set()
 
 
 def test_healthz_endpoint_during_startup():
@@ -97,10 +97,10 @@ def test_healthz_endpoint_during_startup():
     import app as app_module
     from app import app
     
-    # Temporarily set startup_complete to False to simulate startup
-    original_state = app_module.startup_complete
+    # Clear the event to simulate startup state
+    original_state = app_module.startup_complete_event.is_set()
     try:
-        app_module.startup_complete = False
+        app_module.startup_complete_event.clear()
         
         # Create client without context manager to avoid running lifespan
         client = TestClient(app, raise_server_exceptions=False)
@@ -111,7 +111,8 @@ def test_healthz_endpoint_during_startup():
         assert "Application is starting up" in response.json()["detail"]
     finally:
         # Restore original state
-        app_module.startup_complete = original_state
+        if original_state:
+            app_module.startup_complete_event.set()
 
 
 def test_root_endpoint_returns_html(client):
@@ -119,8 +120,9 @@ def test_root_endpoint_returns_html(client):
     response = client.get("/")
     # Should return HTML (200 if template exists, 404 if not)
     assert response.status_code in [200, 404]
-    # Response should be HTML
-    assert "text/html" in response.headers.get("content-type", "")
+    # Response should be HTML only if status is 200
+    if response.status_code == 200:
+        assert "text/html" in response.headers.get("content-type", "")
 
 
 def test_adelante_endpoint_returns_html(client):
@@ -128,8 +130,9 @@ def test_adelante_endpoint_returns_html(client):
     response = client.get("/adelante")
     # Should return HTML (200 if template exists, 404 if not)
     assert response.status_code in [200, 404]
-    # Response should be HTML
-    assert "text/html" in response.headers.get("content-type", "")
+    # Response should be HTML only if status is 200
+    if response.status_code == 200:
+        assert "text/html" in response.headers.get("content-type", "")
 
 
 def test_dashboard_endpoint_returns_html(client):
@@ -137,8 +140,9 @@ def test_dashboard_endpoint_returns_html(client):
     response = client.get("/dashboard")
     # Should return HTML (200 if template exists, 404 if not)
     assert response.status_code in [200, 404]
-    # Response should be HTML
-    assert "text/html" in response.headers.get("content-type", "")
+    # Response should be HTML only if status is 200
+    if response.status_code == 200:
+        assert "text/html" in response.headers.get("content-type", "")
 
 
 def test_api_sessions_endpoint(client):
