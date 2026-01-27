@@ -12,17 +12,11 @@ from analytics import get_analytics_backend
 import uvicorn
 import asyncio
 from datetime import datetime
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="Adelante Story Chatbot")
-
-# Enable CORS for WordPress embedding
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with ["https://adelantestory.com"]
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Track application startup state
+# Using asyncio.Event for thread-safe startup tracking
+startup_complete_event = asyncio.Event()
 
 # Store active conversations
 conversations = {}
@@ -69,9 +63,13 @@ class MCPConnectionPool:
 # Global connection pool
 mcp_pool = MCPConnectionPool()
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize MCP connection on startup"""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifespan event handler for FastAPI startup and shutdown.
+    Replaces deprecated @app.on_event() decorators.
+    """
+    # Startup
     print("Initializing MCP connection pool...")
     try:
         await mcp_pool.get_mcp_tool()
@@ -79,11 +77,30 @@ async def startup_event():
     except Exception as e:
         print(f"Warning: MCP connection failed at startup: {e}")
         print("Will retry on first request")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
+        # Note: We still mark startup as complete to allow the service to start.
+        # This enables graceful degradation - the app can serve requests and retry
+        # MCP connections on-demand rather than failing the entire pod startup.
+    
+    # Mark startup as complete
+    startup_complete_event.set()
+    
+    yield
+    
+    # Shutdown
     print("Shutting down...")
+    # Note: We don't clear startup_complete_event during shutdown to avoid
+    # race conditions with in-flight requests
+
+app = FastAPI(title="Adelante Story Chatbot", lifespan=lifespan)
+
+# Enable CORS for WordPress embedding
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with ["https://adelantestory.com"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class ChatRequest(BaseModel):
     message: str
@@ -129,11 +146,39 @@ async def adelante_chat():
             status_code=404
         )
 
-@app.get("/health")
-async def health_check():
-    """Health check endpoint for deployment monitoring"""
+@app.get("/healthz")
+async def healthz():
+    """
+    Kubernetes-style health check endpoint for startup probes.
+    Returns 503 during startup, 200 when ready.
+    
+    Note: This is designed for startup probes, not liveness probes.
+    For liveness probes, use the /health endpoint which always returns 200.
+    """
+    if not startup_complete_event.is_set():
+        raise HTTPException(
+            status_code=503,
+            detail="Application is starting up"
+        )
+    
     return {
         "status": "healthy",
+        "startup_complete": True,
+        "mcp_connected": mcp_pool.mcp_tool is not None
+    }
+
+@app.get("/health")
+async def health_check():
+    """
+    Legacy health check endpoint for backward compatibility and liveness probes.
+    Always returns 200 with status information.
+    
+    This endpoint is suitable for liveness probes as it returns 200 even during startup.
+    Use /healthz for startup probes.
+    """
+    return {
+        "status": "healthy" if startup_complete_event.is_set() else "starting",
+        "startup_complete": startup_complete_event.is_set(),
         "mcp_connected": mcp_pool.mcp_tool is not None
     }
 
